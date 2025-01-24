@@ -69,11 +69,11 @@ def precipitation():
     year_percip= session.query(Measurement.date, Measurement.prcp).\
     filter(Measurement.date >= prev_year).all()
     
-    session.close()
+    
 
     percip_dict= {date: prcp for date, prcp in year_percip}
     return jsonify(percip_dict)
-    
+    session.close()
 #################################################
 
 #return the stations
@@ -83,7 +83,7 @@ def stations():
 
     stations= session.query(Station.station, Station.name).all()
     station_dict = {name: station for name, station in stations}
-    
+
     return jsonify(station_dict)
     session.close()
 
@@ -107,11 +107,53 @@ def tobs():
     return jsonify(tob_list)
     session.close()
 
+
 #start date 
-@app.route("/api/v1.0/<start>")
-def start():
+@app.route("/api/v1.0/temp/<start>")
+def start_input(start):
+    #print("input start date...")
+
+    start= dt.datetime.strptime(start, "%m%d%Y")
 
 
+#set variables as instructed 
+
+    TMIN = func.min(Measurement.tobs)
+    TMAX = func.max(Measurement.tobs)
+    TAVG = func.avg(Measurement.tobs)
+    
+#return the query with the calcuated variables    
+
+    results = session.query([TMIN, TMAX, TAVG]).filter(Measurement.date >=start).all()
+    session.close()
+    temps = list(np.ravel(results))
+    return jsonify(temps=temps)
+        
+
+
+
+#@app.route("/api/v1.0/<start>/<end>")
+#def input_end():
+def date_range(start, end):
+
+
+    start= dt.datetime.strptime(start, "%m%d%Y")
+    end= dt.datetime.strptime(end, "%m%d%Y")
+
+#set variables as instructed 
+
+    TMIN = func.min(Measurement.tobs)
+    TMAX = func.max(Measurement.tobs)
+    TAVG = func.avg(Measurement.tobs)
+    
+#return the query with the calcuated variables    
+
+    rresults = session.query([TMIN, TMAX, TAVG]).filter(Measurement.date >=start).filter(Measurement.date<=end).all()
+    session.close()
+    rtemps = list(np.ravel(rresults))
+    return jsonify(rtemps=rtemps)
+        
+    
 if __name__ == '__main__':
     app.run()
 
